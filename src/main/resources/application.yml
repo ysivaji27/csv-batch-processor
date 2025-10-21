@@ -1,0 +1,34 @@
+spring:
+  application:
+    name: csv-batch-processor-v3
+  batch:
+    job:
+      enabled: false
+    jdbc:
+      initialize-schema: always
+  datasource:
+    url: jdbc:h2:file:./data/batchdb;DB_CLOSE_DELAY=-1;AUTO_SERVER=TRUE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+server:
+  port: 8080
+
+logging:
+  level:
+    root: INFO
+    com.example.batch: INFO
+  pattern:
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+
+app:
+  csv:
+    file-path: "/path/to/your/15gb.csv"   # <-- update
+    has-header: true
+  api:
+    base-url: "https://your-api-endpoint.example.com"   # <-- update
+    path: "/upload"                                     # <-- update
+  batch:
+    chunk-size: 100           # how many lines to aggregate into one string
+    grid-size: 4              # number of parallel partitions/threads
