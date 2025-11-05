@@ -1,0 +1,151 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { AgGridReact } from 'ag-grid-react';
+import 'ag-grid-community/styles/ag-grid.css';
+import 'ag-grid-community/styles/ag-theme-alpine.css';
+
+// --- Cell Renderer: 3-dots + two buttons ---
+const RowActionsRenderer = (props) => {
+  const [open, setOpen] = useState(false);
+  const menuRef = useRef(null);
+
+  const toggle = (e) => {
+    e.stopPropagation();
+    setOpen((v) => !v);
+  };
+
+  // close when clicking outside
+  useEffect(() => {
+    if (!open) return;
+    const onDocClick = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', onDocClick);
+    return () => document.removeEventListener('mousedown', onDocClick);
+  }, [open]);
+
+  const handleCustomerView = () => {
+    setOpen(false);
+    props.context.onCustomerView?.(props.data); // call parent with the row data
+  };
+
+  const handleNetworkView = () => {
+    setOpen(false);
+    props.context.onNetworkView?.(props.data);
+  };
+
+  return (
+    <div style={{ position: 'relative' }}>
+      <button
+        onClick={toggle}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        title="Row actions"
+        style={{
+          background: 'none',
+          border: 'none',
+          cursor: 'pointer',
+          fontSize: '18px',
+          lineHeight: 1,
+          padding: 4,
+        }}
+      >
+        ⋮
+      </button>
+
+      {open && (
+        <div
+          ref={menuRef}
+          role="menu"
+          style={{
+            position: 'absolute',
+            top: '24px',
+            right: 0,
+            background: '#fff',
+            borderRadius: 6,
+            boxShadow: '0 6px 20px rgba(0,0,0,0.18)',
+            minWidth: 160,
+            padding: 6,
+            zIndex: 1000,
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            role="menuitem"
+            onClick={handleCustomerView}
+            style={{
+              width: '100%',
+              textAlign: 'left',
+              padding: '8px 10px',
+              border: 'none',
+              background: 'transparent',
+              cursor: 'pointer',
+            }}
+          >
+            Customer View
+          </button>
+          <button
+            role="menuitem"
+            onClick={handleNetworkView}
+            style={{
+              width: '100%',
+              textAlign: 'left',
+              padding: '8px 10px',
+              border: 'none',
+              background: 'transparent',
+              cursor: 'pointer',
+            }}
+          >
+            Network View
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// --- Grid usage example ---
+const AgGridExample = () => {
+  const rowData = [
+    { id: 101, name: 'Alice', account: 'C-001' },
+    { id: 102, name: 'Bob', account: 'C-002' },
+  ];
+
+  const columnDefs = [
+    { field: 'name', headerName: 'Name', flex: 1 },
+    { field: 'account', headerName: 'Account', flex: 1 },
+    {
+      headerName: 'Actions',
+      cellRenderer: RowActionsRenderer,
+      width: 110,
+      suppressMenu: true,
+      sortable: false,
+      filter: false,
+    },
+  ];
+
+  // These get called when a menu item is clicked
+  const onCustomerView = (row) => {
+    // put your navigation / modal / side panel logic here
+    console.log('Customer View for:', row);
+    alert(`Customer View → ${row.name} (${row.account})`);
+  };
+
+  const onNetworkView = (row) => {
+    console.log('Network View for:', row);
+    alert(`Network View → ${row.name} (${row.account})`);
+  };
+
+  return (
+    <div className="ag-theme-alpine" style={{ height: 400 }}>
+      <AgGridReact
+        rowData={rowData}
+        columnDefs={columnDefs}
+        context={{ onCustomerView, onNetworkView }}
+      />
+    </div>
+  );
+};
+
+export default AgGridExample;
