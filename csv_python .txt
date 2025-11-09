@@ -1,0 +1,50 @@
+# process_big_csv_async.py
+import pandas as pd
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
+from csv_to_rml import chunk_df_to_turtle
+from api_client import send_turtle
+
+def handle_chunk(i, chunk_df):
+    print(f"[worker] Start chunk {i}")
+    turtle_data = chunk_df_to_turtle(chunk_df)
+    send_turtle(turtle_data)
+    print(f"[worker] Done chunk {i}")
+    return i
+
+def process_big_csv_async(path_to_big_csv, chunksize=50_000, max_workers=4):
+    futures = []
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        for i, chunk_df in enumerate(pd.read_csv(path_to_big_csv, chunksize=chunksize), start=1):
+            print(f"[main] Submitting chunk {i}")
+            futures.append(executor.submit(handle_chunk, i, chunk_df))
+
+        for fut in as_completed(futures):
+            i = fut.result()
+            print(f"[main] Confirmed completion of chunk {i}")
+
+if __name__ == "__main__":
+    process_big_csv_async("big_file.csv")
+
+
+-----Running for multiple big CSV files
+FILES = [
+    "file1.csv",
+    "file2.csv",
+    "file3.csv",
+    # ...
+]
+
+for path in FILES:
+    print(f"=== Starting {path} ===")
+    process_big_csv_async(path, chunksize=50_000, max_workers=4)
+    print(f"=== Finished {path} ===")
+
+
+--- without sync
+      def process_big_csv(path_to_big_csv, chunksize=50_000):
+    for i, chunk_df in enumerate(pd.read_csv(path_to_big_csv, chunksize=chunksize), start=1):
+        print(f"Processing chunk {i}...")
+        turtle_data = chunk_to_turtle_via_rml(chunk_df, MAPPING_FILE)
+        send_turtle_to_api(turtle_data)
+        print(f"Finished chunk {i}")
